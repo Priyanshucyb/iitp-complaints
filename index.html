@@ -420,7 +420,7 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -474,7 +474,16 @@ window.registerUser = async () => {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
     await setDoc(doc(db, "users", cred.user.uid), { name, roll, email, createdAt: serverTimestamp() });
+    await sendEmailVerification(cred.user);
+    await signOut(auth);
+    err.style.color = "#166534";
+    err.textContent = "✓ Verification email sent! Check your inbox and verify before logging in.";
+    document.getElementById("regName").value = "";
+    document.getElementById("regRoll").value = "";
+    document.getElementById("regEmail").value = "";
+    document.getElementById("regPass").value = "";
   } catch (e) {
+    err.style.color = "#dc2626";
     err.textContent = firebaseErrMsg(e.code);
   }
 };
@@ -487,7 +496,12 @@ window.loginUser = async () => {
   if (!email || !pass) { err.textContent = "Please fill all fields."; return; }
   if (!email.endsWith("@iitp.ac.in")) { err.textContent = "Only @iitp.ac.in email addresses are allowed."; return; }
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    if (!cred.user.emailVerified) {
+      await signOut(auth);
+      err.textContent = "Please verify your email first. Check your inbox for the verification link.";
+      return;
+    }
   } catch (e) {
     err.textContent = firebaseErrMsg(e.code);
   }
