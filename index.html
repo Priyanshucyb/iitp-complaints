@@ -476,11 +476,15 @@ window.registerUser = async () => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
     await updateProfile(cred.user, { displayName: name });
-    await setDoc(doc(db, "users", cred.user.uid), { name, roll, email, createdAt: serverTimestamp() });
     await sendEmailVerification(cred.user);
+    try {
+      await setDoc(doc(db, "users", cred.user.uid), { name, roll, email, createdAt: serverTimestamp() });
+    } catch (dbErr) {
+      console.warn("Firestore save failed, but account created:", dbErr);
+    }
     await signOut(auth);
     err.style.color = "#166534";
-    err.textContent = "✓ Verification email sent! Check your inbox and verify before logging in.";
+    err.textContent = "✓ Account created! Verification email sent to your IITP inbox. Verify then login.";
     document.getElementById("regName").value = "";
     document.getElementById("regRoll").value = "";
     document.getElementById("regEmail").value = "";
