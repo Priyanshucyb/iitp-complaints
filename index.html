@@ -237,7 +237,18 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
   .content { padding: 1.2rem; }
   .nav-user { display: none; }
 }
-
+.vote-btn { display:flex; align-items:center; gap:5px; background:none; border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:12px; color:var(--muted); cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+.vote-btn:hover { border-color:var(--navy2); color:var(--navy); }
+.vote-btn.voted { background:#e8eef8; border-color:var(--navy); color:var(--navy); font-weight:600; }
+.admin-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:1.2rem; margin-bottom:10px; }
+.admin-actions { margin-top:12px; padding-top:12px; border-top:1px solid var(--border); display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.status-select { font-size:12px; padding:5px 10px; border:1px solid var(--border); border-radius:8px; background:var(--white); color:var(--text); font-family:'DM Sans',sans-serif; cursor:pointer; }
+.reply-input { width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); resize:vertical; min-height:60px; outline:none; margin-top:8px; }
+.reply-input:focus { border-color:var(--navy2); }
+.btn-reply { background:var(--navy); color:#fff; border:none; border-radius:8px; padding:7px 16px; font-size:13px; font-weight:600; cursor:pointer; margin-top:6px; font-family:'DM Sans',sans-serif; }
+.btn-reply:hover { background:var(--navy2); }
+.admin-reply { background:#f0f7ff; border-left:3px solid var(--navy2); padding:8px 12px; border-radius:0 8px 8px 0; margin-top:8px; font-size:13px; color:var(--text); }
+.admin-reply-label { font-size:11px; font-weight:600; color:var(--navy2); margin-bottom:3px; }
   </style>
 </head>
 <body>
@@ -329,6 +340,10 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
         <svg viewBox="0 0 20 20" fill="currentColor" width="18"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h7a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
         All Complaints
       </a>
+      <a class="nav-item" id="adminNavItem" style="display:none" onclick="switchView('admin',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"/></svg>
+        Admin Panel
+      </a>
     </aside>
 
     <main class="content">
@@ -414,6 +429,21 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
         <div id="allList" class="card-list"></div>
       </section>
 
+      <!-- ADMIN VIEW -->
+      <section id="vAdmin" class="view">
+        <div class="view-header">
+          <h2>Admin Panel</h2>
+          <p>Manage all complaints — change status and reply</p>
+        </div>
+        <div class="filter-bar">
+          <button class="fbtn active" onclick="setAdminFilter('all',this)">All</button>
+          <button class="fbtn" onclick="setAdminFilter('Pending',this)">Pending</button>
+          <button class="fbtn" onclick="setAdminFilter('In Progress',this)">In Progress</button>
+          <button class="fbtn" onclick="setAdminFilter('Resolved',this)">Resolved</button>
+        </div>
+        <div id="adminList" class="card-list"></div>
+      </section>
+
     </main>
   </div>
 </div>
@@ -421,7 +451,7 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCCcfRiLwB5w2qPBia54rTRU3Uv9I4p_1Q",
@@ -446,6 +476,9 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("appPage").style.display = "block";
     document.getElementById("navUser").textContent = user.email;
+    if (ADMIN_EMAILS.includes(user.email)) {
+      document.getElementById("adminNavItem").style.display = "flex";
+    }
     await loadAllComplaints();
     renderDashboard();
   } else {
@@ -571,6 +604,7 @@ window.switchView = (name, el) => {
   if (name === "dashboard") renderDashboard();
   if (name === "my") renderMy();
   if (name === "all") renderAll();
+  if (name === "admin") renderAdmin();
 };
 
 function renderDashboard() {
@@ -584,19 +618,19 @@ function renderDashboard() {
     <div class="stat-card"><div class="s-label">In Progress</div><div class="s-val s-sky">${inprog}</div></div>
     <div class="stat-card"><div class="s-label">Resolved</div><div class="s-val s-green">${resolved}</div></div>`;
   document.getElementById("recentList").innerHTML =
-    allComplaints.slice(0, 5).map(cardHTML).join("") || emptyState("No complaints yet");
+    allComplaints.slice(0, 5).map(cardHTMLWithVote).join("") || emptyState("No complaints yet");
 }
 
 function renderMy() {
   const mine = allComplaints.filter(c => c.userId === currentUser.uid);
   document.getElementById("myList").innerHTML =
-    mine.map(cardHTML).join("") || emptyState("You haven't submitted any complaints yet");
+    mine.map(cardHTMLWithVote).join("") || emptyState("You haven't submitted any complaints yet");
 }
 
 function renderAll() {
   const list = currentFilter === "all" ? allComplaints : allComplaints.filter(c => c.status === currentFilter);
   document.getElementById("allList").innerHTML =
-    list.map(cardHTML).join("") || emptyState("No complaints in this category");
+    list.map(cardHTMLWithVote).join("") || emptyState("No complaints in this category");
 }
 
 window.setFilter = (f, btn) => {
@@ -627,6 +661,124 @@ function cardHTML(c) {
 
 function emptyState(msg) { return `<div class="empty"><div class="empty-icon">📭</div>${msg}</div>`; }
 function escHtml(str) { return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// ─── ADMIN EMAILS ─────────────────────────────────
+const ADMIN_EMAILS = ["priyanshu_ua2503aih300@iitp.ac.in"]; // apni email yahan daalo
+
+// ─── VOTING ───────────────────────────────────────
+window.toggleVote = async (complaintId, btn) => {
+  if (!currentUser) return;
+  const ref = doc(db, "complaints", complaintId);
+  const snap = await getDocs(query(collection(db, "complaints")));
+  const complaint = allComplaints.find(c => c.id === complaintId);
+  if (!complaint) return;
+  const votes = complaint.votes || [];
+  const hasVoted = votes.includes(currentUser.uid);
+  const newVotes = hasVoted ? votes.filter(v => v !== currentUser.uid) : [...votes, currentUser.uid];
+  await updateDoc(ref, { votes: newVotes });
+  complaint.votes = newVotes;
+  btn.classList.toggle("voted", !hasVoted);
+  btn.querySelector(".vote-count").textContent = newVotes.length;
+};
+
+// ─── ADMIN: Change Status ─────────────────────────
+window.changeStatus = async (complaintId, newStatus) => {
+  try {
+    await updateDoc(doc(db, "complaints", complaintId), { status: newStatus });
+    const c = allComplaints.find(x => x.id === complaintId);
+    if (c) c.status = newStatus;
+    renderAdmin();
+    renderDashboard();
+  } catch(e) { alert("Error updating status: " + e.message); }
+};
+
+// ─── ADMIN: Send Reply ────────────────────────────
+window.sendReply = async (complaintId) => {
+  const input = document.getElementById("reply_" + complaintId);
+  const replyText = input.value.trim();
+  if (!replyText) return;
+  try {
+    await updateDoc(doc(db, "complaints", complaintId), {
+      adminReply: replyText,
+      repliedAt: serverTimestamp(),
+      repliedBy: currentUser.email
+    });
+    const c = allComplaints.find(x => x.id === complaintId);
+    if (c) { c.adminReply = replyText; c.repliedBy = currentUser.email; }
+    input.value = "";
+    renderAdmin();
+  } catch(e) { alert("Error sending reply: " + e.message); }
+};
+
+// ─── ADMIN: Filter ────────────────────────────────
+let adminFilter = "all";
+window.setAdminFilter = (f, btn) => {
+  adminFilter = f;
+  document.querySelectorAll("#vAdmin .fbtn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderAdmin();
+};
+
+function renderAdmin() {
+  let list = adminFilter === "all" ? allComplaints : allComplaints.filter(c => c.status === adminFilter);
+  if (!list.length) { document.getElementById("adminList").innerHTML = emptyState("No complaints"); return; }
+  document.getElementById("adminList").innerHTML = list.map(c => {
+    const date = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : "—";
+    const statusClass = {"Pending":"b-pending","In Progress":"b-progress","Resolved":"b-resolved","Rejected":"b-rejected"}[c.status]||"b-pending";
+    const votes = (c.votes||[]).length;
+    return `<div class="admin-card">
+      <div class="c-top">
+        <div>
+          <div class="c-title">${escHtml(c.title)}</div>
+          <div class="c-meta"><span class="cat-tag">${escHtml(c.category)}</span>${c.location?" · "+escHtml(c.location):""} · ${date} · by ${escHtml(c.userName||c.userEmail)}</div>
+        </div>
+        <div class="c-badges"><span class="badge ${statusClass}">${c.status}</span></div>
+      </div>
+      <div class="c-desc">${escHtml(c.description)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">👍 ${votes} votes</div>
+      ${c.adminReply ? `<div class="admin-reply"><div class="admin-reply-label">Admin Reply</div>${escHtml(c.adminReply)}</div>` : ""}
+      <div class="admin-actions">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Status:</span>
+        <select class="status-select" onchange="changeStatus('${c.id}', this.value)">
+          <option ${c.status==="Pending"?"selected":""}>Pending</option>
+          <option ${c.status==="In Progress"?"selected":""}>In Progress</option>
+          <option ${c.status==="Resolved"?"selected":""}>Resolved</option>
+          <option ${c.status==="Rejected"?"selected":""}>Rejected</option>
+        </select>
+      </div>
+      <textarea class="reply-input" id="reply_${c.id}" placeholder="Write a reply to this complaint…"></textarea>
+      <button class="btn-reply" onclick="sendReply('${c.id}')">Send Reply</button>
+    </div>`;
+  }).join("");
+}
+
+// ─── Updated cardHTML with voting ─────────────────
+function cardHTMLWithVote(c) {
+  const date = c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}) : "—";
+  const statusClass = {"Pending":"b-pending","In Progress":"b-progress","Resolved":"b-resolved","Rejected":"b-rejected"}[c.status]||"b-pending";
+  const priClass = {"Critical":"p-critical","High":"p-high","Medium":"p-medium","Low":"p-low"}[c.priority]||"p-medium";
+  const votes = c.votes || [];
+  const hasVoted = currentUser && votes.includes(currentUser.uid);
+  return `<div class="c-card">
+    <div class="c-top">
+      <div>
+        <div class="c-title">${escHtml(c.title)}</div>
+        <div class="c-meta"><span class="cat-tag">${escHtml(c.category)}</span>${c.location?" · "+escHtml(c.location):""} · ${date}</div>
+      </div>
+      <div class="c-badges"><span class="badge ${statusClass}">${c.status}</span><span class="pri-dot ${priClass}"></span></div>
+    </div>
+    <div class="c-desc">${escHtml(c.description)}</div>
+    ${c.adminReply ? `<div class="admin-reply" style="margin-top:8px"><div class="admin-reply-label">Admin Reply</div>${escHtml(c.adminReply)}</div>` : ""}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px">
+      <div class="c-by">Submitted by ${escHtml(c.userName||c.userEmail)}</div>
+      <button class="vote-btn ${hasVoted?"voted":""}" onclick="toggleVote('${c.id}', this)">
+        <span class="vote-icon">👍</span>
+        <span class="vote-count">${votes.length}</span>
+        <span>${hasVoted?"Voted":"Upvote"}</span>
+      </button>
+    </div>
+  </div>`;
+}
 </script>
 </body>
 </html>
