@@ -313,7 +313,7 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
 
   <nav class="navbar">
     <div class="nav-brand">
-      <svg viewBox="0 0 40 40" fill="none" width="26"><polygon points="20,3 37,35 3,35" fill="#f0b429"/></svg>
+      <img src="https://www.iitp.ac.in/images/logo.png" alt="IITP" style="height:36px;width:auto;object-fit:contain;filter:brightness(0) invert(1);" onerror="this.style.display='none'" />
       <span>IITP <em>Complaints</em></span>
     </div>
     <div class="nav-right">
@@ -420,6 +420,9 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
           <h2>All Complaints</h2>
           <p>All complaints from IITP students</p>
         </div>
+        <div style="margin-bottom:12px">
+          <input type="text" id="searchBar" class="field" style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;" placeholder="🔍  Search complaints by title, category or location…" oninput="renderAll()" />
+        </div>
         <div class="filter-bar">
           <button class="fbtn active" onclick="setFilter('all',this)">All</button>
           <button class="fbtn" onclick="setFilter('Pending',this)">Pending</button>
@@ -451,7 +454,7 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCCcfRiLwB5w2qPBia54rTRU3Uv9I4p_1Q",
@@ -628,14 +631,24 @@ function renderMy() {
 }
 
 function renderAll() {
-  const list = currentFilter === "all" ? allComplaints : allComplaints.filter(c => c.status === currentFilter);
+  const searchEl = document.getElementById("searchBar");
+  const q = searchEl ? searchEl.value.toLowerCase().trim() : "";
+  let list = currentFilter === "all" ? allComplaints : allComplaints.filter(c => c.status === currentFilter);
+  if (q) {
+    list = list.filter(c =>
+      (c.title||"").toLowerCase().includes(q) ||
+      (c.category||"").toLowerCase().includes(q) ||
+      (c.location||"").toLowerCase().includes(q) ||
+      (c.description||"").toLowerCase().includes(q)
+    );
+  }
   document.getElementById("allList").innerHTML =
-    list.map(cardHTMLWithVote).join("") || emptyState("No complaints in this category");
+    list.map(cardHTMLWithVote).join("") || emptyState("No complaints found");
 }
 
 window.setFilter = (f, btn) => {
   currentFilter = f;
-  document.querySelectorAll(".fbtn").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll("#vAll .fbtn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   renderAll();
 };
@@ -693,6 +706,16 @@ window.changeStatus = async (complaintId, newStatus) => {
 };
 
 // ─── ADMIN: Send Reply ────────────────────────────
+window.deleteComplaint = async (complaintId) => {
+  if (!confirm("Are you sure you want to delete this complaint? This cannot be undone.")) return;
+  try {
+    await deleteDoc(doc(db, "complaints", complaintId));
+    allComplaints = allComplaints.filter(c => c.id !== complaintId);
+    renderAdmin();
+    renderDashboard();
+  } catch(e) { alert("Error deleting: " + e.message); }
+};
+
 window.sendReply = async (complaintId) => {
   const input = document.getElementById("reply_" + complaintId);
   const replyText = input.value.trim();
@@ -748,6 +771,7 @@ function renderAdmin() {
       </div>
       <textarea class="reply-input" id="reply_${c.id}" placeholder="Write a reply to this complaint…"></textarea>
       <button class="btn-reply" onclick="sendReply('${c.id}')">Send Reply</button>
+      <button class="btn-reply" style="background:#dc2626;margin-left:8px" onclick="deleteComplaint('${c.id}')">🗑 Delete</button>
     </div>`;
   }).join("");
 }
