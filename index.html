@@ -441,7 +441,7 @@ let allComplaints = [];
 let currentFilter = "all";
 
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
+  if (user && user.emailVerified) {
     currentUser = user;
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("appPage").style.display = "block";
@@ -449,6 +449,9 @@ onAuthStateChanged(auth, async (user) => {
     await loadAllComplaints();
     renderDashboard();
   } else {
+    if (user && !user.emailVerified) {
+      await signOut(auth);
+    }
     currentUser = null;
     document.getElementById("loginPage").style.display = "block";
     document.getElementById("appPage").style.display = "none";
