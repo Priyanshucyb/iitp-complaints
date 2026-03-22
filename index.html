@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IITP Campus Complaints</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="page">
+  <div class="login-bg">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 40 40" fill="none"><polygon points="20,3 37,35 3,35" fill="#f0b429"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>IIT Patna</h1>
+          <span>Campus Complaint Portal</span>
+        </div>
+      </div>
+
+      <div id="loginView">
+        <p class="form-hint">Sign in with your IITP email to continue</p>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="rollno@iitp.ac.in" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="loginPass" placeholder="••••••••" />
+        </div>
+        <div class="err-msg" id="loginErr"></div>
+        <button class="btn-main" onclick="loginUser()">Sign In</button>
+        <p class="switch-text">New here? <a href="#" onclick="toggleForm('register'); return false;">Create Account</a></p>
+      </div>
+
+      <div id="registerView" style="display:none">
+        <p class="form-hint">Register with your IITP email</p>
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" id="regName" placeholder="Your full name" />
+        </div>
+        <div class="field">
+          <label>Roll Number</label>
+          <input type="text" id="regRoll" placeholder="e.g. 2201CS01" />
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="rollno@iitp.ac.in" />
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="regPass" placeholder="Min 6 characters" />
+        </div>
+        <div class="err-msg" id="regErr"></div>
+        <button class="btn-main" onclick="registerUser()">Create Account</button>
+        <p class="switch-text">Already registered? <a href="#" onclick="toggleForm('login'); return false;">Sign In</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APP PAGE -->
+<div id="appPage" class="page" style="display:none">
+
+  <nav class="navbar">
+    <div class="nav-brand">
+      <svg viewBox="0 0 40 40" fill="none" width="26"><polygon points="20,3 37,35 3,35" fill="#f0b429"/></svg>
+      <span>IITP <em>Complaints</em></span>
+    </div>
+    <div class="nav-right">
+      <span class="nav-user" id="navUser"></span>
+      <button class="btn-logout" onclick="logoutUser()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="app-layout">
+    <aside class="sidebar">
+      <a class="nav-item active" onclick="switchView('dashboard',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18"><rect x="1" y="1" width="7" height="7" rx="1.5"/><rect x="12" y="1" width="7" height="7" rx="1.5"/><rect x="1" y="12" width="7" height="7" rx="1.5"/><rect x="12" y="12" width="7" height="7" rx="1.5"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-item" onclick="switchView('submit',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"/></svg>
+        New Complaint
+      </a>
+      <a class="nav-item" onclick="switchView('my',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/></svg>
+        My Complaints
+      </a>
+      <a class="nav-item" onclick="switchView('all',this)">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h7a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+        All Complaints
+      </a>
+    </aside>
+
+    <main class="content">
+
+      <section id="vDashboard" class="view active">
+        <div class="view-header">
+          <h2>Dashboard</h2>
+          <p>Campus issue overview</p>
+        </div>
+        <div class="stats-row" id="statsRow"></div>
+        <div class="sec-label">Recent Complaints</div>
+        <div id="recentList" class="card-list"></div>
+      </section>
+
+      <section id="vSubmit" class="view">
+        <div class="view-header">
+          <h2>New Complaint</h2>
+          <p>Report an issue — we track it until resolved</p>
+        </div>
+        <div class="toast" id="submitToast">✓ Complaint submitted!</div>
+        <div class="form-box">
+          <div class="form-row2">
+            <div class="field">
+              <label>Category *</label>
+              <select id="fCat">
+                <option value="">Select…</option>
+                <option>Hostel</option>
+                <option>Mess / Food</option>
+                <option>Academics</option>
+                <option>Infrastructure</option>
+                <option>Sports</option>
+                <option>Library</option>
+                <option>Medical</option>
+                <option>Wi-Fi / Internet</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Priority *</label>
+              <select id="fPri">
+                <option>Low</option>
+                <option selected>Medium</option>
+                <option>High</option>
+                <option>Critical</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Title *</label>
+            <input type="text" id="fTitle" placeholder="Short summary of the issue" />
+          </div>
+          <div class="field">
+            <label>Description *</label>
+            <textarea id="fDesc" placeholder="Describe the issue in detail…" rows="4"></textarea>
+          </div>
+          <div class="field">
+            <label>Location (optional)</label>
+            <input type="text" id="fLoc" placeholder="e.g. Hostel 3, Room 204" />
+          </div>
+          <button class="btn-main" onclick="submitComplaint()">Submit Complaint</button>
+        </div>
+      </section>
+
+      <section id="vMy" class="view">
+        <div class="view-header">
+          <h2>My Complaints</h2>
+          <p>Complaints you have submitted</p>
+        </div>
+        <div id="myList" class="card-list"></div>
+      </section>
+
+      <section id="vAll" class="view">
+        <div class="view-header">
+          <h2>All Complaints</h2>
+          <p>All complaints from IITP students</p>
+        </div>
+        <div class="filter-bar">
+          <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+          <button class="fbtn" onclick="setFilter('Pending',this)">Pending</button>
+          <button class="fbtn" onclick="setFilter('In Progress',this)">In Progress</button>
+          <button class="fbtn" onclick="setFilter('Resolved',this)">Resolved</button>
+        </div>
+        <div id="allList" class="card-list"></div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script type="module" src="js/firebase-config.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
