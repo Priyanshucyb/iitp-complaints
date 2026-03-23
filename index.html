@@ -425,6 +425,7 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
       <span class="nav-brand-text">IITP <em>Complaints</em></span>
     </div>
     <div class="nav-right">
+      <span id="navUser" style="display:none"></span>
       <button class="notif-btn" onclick="toggleNotif()" id="notifBtn" title="Notifications">
         🔔
         <span class="notif-badge" id="notifBadge">0</span>
@@ -577,7 +578,7 @@ onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("appPage").style.display = "block";
-    document.getElementById("navUser").textContent = user.email;
+    const nu = document.getElementById("navUser"); if(nu) nu.textContent = user.email;
     const su = document.getElementById("sidebarUser"); if(su) su.textContent = user.email;
     if (ADMIN_EMAILS.includes(user.email)) {
       document.getElementById("adminNavItem").style.display = "flex";
