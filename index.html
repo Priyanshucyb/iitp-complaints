@@ -313,12 +313,54 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
 .votes-pill{font-size:12px;font-weight:700;color:var(--muted);background:#f8fafc;border:1px solid var(--border2);padding:3px 10px;border-radius:20px;}
 
 /* ── RESPONSIVE ── */
+/* ── HAMBURGER ── */
+.hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:6px;}
+.hamburger span{display:block;width:22px;height:2px;background:white;border-radius:2px;transition:all 0.3s;}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:199;}
+.sidebar-overlay.show{display:block;}
+/* ── NOTIFICATION ── */
+.notif-btn{position:relative;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background 0.2s;}
+.notif-btn:hover{background:rgba(255,255,255,0.22);}
+.notif-badge{position:absolute;top:-3px;right:-3px;background:#ef4444;color:white;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;display:none;}
+.notif-badge.show{display:flex;}
+.notif-panel{
+  position:fixed;top:70px;right:16px;width:340px;
+  background:white;border-radius:14px;
+  box-shadow:0 8px 40px rgba(10,31,92,0.18);
+  border:1px solid var(--border);z-index:300;
+  display:none;overflow:hidden;
+  animation:slideDown 0.2s ease;
+}
+.notif-panel.show{display:block;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.notif-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.notif-header h3{font-size:14px;font-weight:700;color:var(--navy);}
+.notif-clear{font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Plus Jakarta Sans',sans-serif;}
+.notif-clear:hover{color:var(--navy);}
+.notif-list{max-height:320px;overflow-y:auto;}
+.notif-item{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;}
+.notif-item:hover{background:#f8fafc;}
+.notif-item.unread{background:#eff6ff;}
+.notif-item-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.notif-item-sub{font-size:12px;color:var(--muted);line-height:1.4;}
+.notif-item-time{font-size:11px;color:var(--muted2);margin-top:3px;}
+.notif-empty{padding:2rem;text-align:center;color:var(--muted);font-size:13px;}
+/* ── FORGOT PASSWORD ── */
+.forgot-link{font-size:12px;color:var(--navy2);text-align:right;display:block;margin-top:-6px;margin-bottom:12px;cursor:pointer;font-weight:600;}
+.forgot-link:hover{text-decoration:underline;}
 @media(max-width:768px){
-  .sidebar{display:none;}
+  .hamburger{display:flex;}
+  .sidebar{
+    position:fixed;left:-230px;top:64px;bottom:0;z-index:200;
+    width:220px;transition:left 0.3s cubic-bezier(0.16,1,0.3,1);
+    box-shadow:none;
+  }
+  .sidebar.open{left:0;box-shadow:4px 0 20px rgba(10,31,92,0.15);}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .form-row2{grid-template-columns:1fr;}
-  .content{padding:1.2rem;}
+  .content{padding:1rem;}
   .nav-user-pill{display:none;}
+  .notif-panel{right:8px;left:8px;width:auto;}
 }
   </style>
 </head>
@@ -347,6 +389,7 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
           <p class="form-hint">Sign in with your IITP email to continue</p>
           <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="rollno@iitp.ac.in" /></div>
           <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••" /></div>
+          <span class="forgot-link" onclick="forgotPassword()">Forgot password?</span>
           <div class="err-msg" id="loginErr"></div>
           <button class="btn-main" onclick="loginUser()">Sign In</button>
         </div>
@@ -369,6 +412,9 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
 <div id="appPage" class="page" style="display:none">
   <nav class="navbar">
     <div class="nav-brand">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
       <div class="nav-logo-wrap">
         <img src="iitp-logo.png" alt="IITP" />
       </div>
@@ -376,9 +422,21 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
     </div>
     <div class="nav-right">
       <span class="nav-user-pill" id="navUser"></span>
+      <button class="notif-btn" onclick="toggleNotif()" id="notifBtn" title="Notifications">
+        🔔
+        <span class="notif-badge" id="notifBadge">0</span>
+      </button>
       <button class="btn-logout" onclick="logoutUser()">Logout</button>
     </div>
   </nav>
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-header">
+      <h3>🔔 Notifications</h3>
+      <button class="notif-clear" onclick="clearNotifs()">Mark all read</button>
+    </div>
+    <div class="notif-list" id="notifList"><div class="notif-empty">No notifications yet</div></div>
+  </div>
 
   <div class="app-layout">
     <aside class="sidebar">
@@ -484,7 +542,7 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -848,6 +906,139 @@ function cardHTMLWithVote(c) {
   </div>`;
 }
 
+
+
+// ── HAMBURGER SIDEBAR ──────────────────────────────
+window.toggleSidebar = () => {
+  const sidebar = document.querySelector(".sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+  sidebar.classList.toggle("open");
+  overlay.classList.toggle("show");
+};
+window.closeSidebar = () => {
+  document.querySelector(".sidebar").classList.remove("open");
+  document.getElementById("sidebarOverlay").classList.remove("show");
+};
+
+// ── FORGOT PASSWORD ────────────────────────────────
+window.forgotPassword = async () => {
+  const email = document.getElementById("loginEmail").value.trim();
+  const err = document.getElementById("loginErr");
+  if (!email) { err.style.color="#dc2626"; err.textContent="Please enter your email first."; return; }
+  if (!email.endsWith("@iitp.ac.in")) { err.style.color="#dc2626"; err.textContent="Only @iitp.ac.in emails allowed."; return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    err.style.color="#166534";
+    err.textContent="✓ Password reset link sent! Check your IITP email.";
+  } catch(e) {
+    err.style.color="#dc2626";
+    err.textContent = e.code === "auth/user-not-found" ? "No account found with this email." : "Error sending reset email.";
+  }
+};
+
+// ── NOTIFICATIONS ──────────────────────────────────
+let notifications = JSON.parse(localStorage.getItem("iitp_notifs") || "[]");
+let notifOpen = false;
+
+function saveNotifs() { try { localStorage.setItem("iitp_notifs", JSON.stringify(notifications)); } catch(e) {} }
+
+function addNotification(title, subtitle) {
+  notifications.unshift({ id: Date.now(), title, subtitle, read: false, time: new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}) });
+  if (notifications.length > 20) notifications = notifications.slice(0,20);
+  saveNotifs();
+  updateNotifBadge();
+  if (notifOpen) renderNotifList();
+}
+
+function updateNotifBadge() {
+  const unread = notifications.filter(n => !n.read).length;
+  const badge = document.getElementById("notifBadge");
+  if (!badge) return;
+  if (unread > 0) { badge.textContent = unread > 9 ? "9+" : unread; badge.classList.add("show"); }
+  else { badge.classList.remove("show"); }
+}
+
+function renderNotifList() {
+  const list = document.getElementById("notifList");
+  if (!list) return;
+  if (!notifications.length) { list.innerHTML = `<div class="notif-empty">No notifications yet</div>`; return; }
+  list.innerHTML = notifications.map(n => `
+    <div class="notif-item ${n.read?"":"unread"}" onclick="markRead(${n.id})">
+      <div class="notif-item-title">${escHtml(n.title)}</div>
+      <div class="notif-item-sub">${escHtml(n.subtitle)}</div>
+      <div class="notif-item-time">${n.time}</div>
+    </div>`).join("");
+}
+
+window.markRead = (id) => {
+  notifications = notifications.map(n => n.id === id ? {...n, read:true} : n);
+  saveNotifs(); updateNotifBadge(); renderNotifList();
+};
+
+window.clearNotifs = () => {
+  notifications = notifications.map(n => ({...n, read:true}));
+  saveNotifs(); updateNotifBadge(); renderNotifList();
+};
+
+window.toggleNotif = () => {
+  const panel = document.getElementById("notifPanel");
+  notifOpen = !notifOpen;
+  panel.classList.toggle("show", notifOpen);
+  if (notifOpen) renderNotifList();
+};
+
+document.addEventListener("click", (e) => {
+  if (notifOpen && !e.target.closest("#notifPanel") && !e.target.closest("#notifBtn")) {
+    notifOpen = false;
+    document.getElementById("notifPanel")?.classList.remove("show");
+  }
+});
+
+// ── WATCH REPLIES (check every 30s) ──────────────
+function checkNewReplies() {
+  if (!currentUser || !allComplaints.length) return;
+  allComplaints.forEach(c => {
+    if (c.userId === currentUser.uid && c.adminReply) {
+      const key = "replied_" + c.id;
+      try {
+        if (!localStorage.getItem(key)) {
+          localStorage.setItem(key, "1");
+          addNotification("Admin replied to your complaint!", `"${c.title.slice(0,40)}"`);
+        }
+      } catch(e) {}
+    }
+  });
+}
+
+// ── NOTIFY admin on new complaint ─────────────────
+const _origSubmit = window.submitComplaint;
+window.submitComplaint = async function() {
+  await _origSubmit();
+  addNotification("Complaint submitted!", "Your complaint is pending review.");
+};
+
+// ── NOTIFY admin on reply sent ────────────────────
+const _origReply = window.sendReply;
+window.sendReply = async function(id) {
+  await _origReply(id);
+  addNotification("Reply sent!", "Student will be notified.");
+  try { localStorage.removeItem("replied_" + id); } catch(e) {}
+};
+
+// ── NOTIFY admin on status change ─────────────────
+const _origStatus = window.changeStatus;
+window.changeStatus = async function(id, status) {
+  await _origStatus(id, status);
+  addNotification(`Status changed to "${status}"`, "Complaint updated successfully.");
+};
+
+// ── INIT ──────────────────────────────────────────
+setTimeout(() => { updateNotifBadge(); checkNewReplies(); }, 1500);
+setInterval(async () => {
+  if (!currentUser) return;
+  await loadAllComplaints();
+  checkNewReplies();
+}, 30000);
 </script>
 </body>
 </html>
