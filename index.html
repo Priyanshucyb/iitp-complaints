@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>IITP Campus Complaints Portal</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a1f5c">
+  <link rel="apple-touch-icon" href="iitp-logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <style>
@@ -366,6 +369,64 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
   .nav-right{gap:6px;}
   .notif-btn{width:32px;height:32px;font-size:14px;}
 }
+
+/* ── DARK MODE ── */
+[data-theme="dark"] {
+  --bg: #0f172a; --white: #1e293b; --text: #f1f5f9;
+  --muted: #94a3b8; --muted2: #64748b;
+  --border: #334155; --border2: #475569;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --gold-light: #422006;
+  --pending-bg:#431407;--pending-c:#fb923c;--pending-border:#7c2d12;
+  --progress-bg:#0c1a4a;--progress-c:#93c5fd;--progress-border:#1e3a8a;
+  --resolved-bg:#052e16;--resolved-c:#86efac;--resolved-border:#166534;
+  --rejected-bg:#2d0a14;--rejected-c:#fda4af;--rejected-border:#9f1239;
+}
+[data-theme="dark"] .login-bg { background: linear-gradient(135deg,#020817 0%,#0a1f5c 50%,#0f2557 100%); }
+[data-theme="dark"] .navbar { background: linear-gradient(135deg,#020817 0%,#0a1f5c 100%); }
+[data-theme="dark"] .sidebar { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .c-card { background: #1e293b; }
+[data-theme="dark"] .stat-card { background: #1e293b; }
+[data-theme="dark"] .form-box { background: #1e293b; }
+[data-theme="dark"] .admin-card { background: #1e293b; }
+[data-theme="dark"] .login-card { background: #1e293b; }
+[data-theme="dark"] .login-body { background: #1e293b; }
+[data-theme="dark"] .field input,[data-theme="dark"] .field select,[data-theme="dark"] .field textarea { background:#0f172a; color:#f1f5f9; border-color:#475569; }
+[data-theme="dark"] .fbtn { background:#1e293b; color:#94a3b8; }
+[data-theme="dark"] .status-select { background:#0f172a; color:#f1f5f9; }
+[data-theme="dark"] .reply-input { background:#0f172a; color:#f1f5f9; }
+[data-theme="dark"] .notif-panel { background:#1e293b; }
+[data-theme="dark"] .notif-item { border-color:#334155; }
+[data-theme="dark"] .notif-item.unread { background:#0c1a4a; }
+[data-theme="dark"] .login-tab-bar { background:#0f172a; }
+[data-theme="dark"] .login-tab.active { background:#1e293b; }
+[data-theme="dark"] .search-wrap input { background:#1e293b; color:#f1f5f9; }
+[data-theme="dark"] .nav-logo-wrap { background:rgba(255,255,255,0.9); }
+
+.dark-toggle {
+  background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+  color:white;width:36px;height:36px;border-radius:50%;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:background 0.2s;
+}
+.dark-toggle:hover { background:rgba(255,255,255,0.22); }
+
+/* ── PHOTO UPLOAD ── */
+.photo-upload-area {
+  border:2px dashed var(--border2);border-radius:10px;
+  padding:1.2rem;text-align:center;cursor:pointer;
+  transition:all 0.2s;background:var(--bg);margin-top:4px;
+}
+.photo-upload-area:hover { border-color:var(--navy2);background:#f0f4ff; }
+.photo-preview { display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
+.photo-preview img { width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border2); }
+.photo-preview .del-photo { position:relative; }
+.photo-preview .del-photo::after { content:'×';position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;border-radius:50%;width:16px;height:16px;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:16px; }
+.complaint-photos { display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
+.complaint-photos img { width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:pointer; }
+.upload-progress { font-size:12px;color:var(--navy2);margin-top:6px;font-weight:600; }
+
   </style>
 </head>
 <body>
@@ -426,6 +487,7 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
     </div>
     <div class="nav-right">
       <span id="navUser" style="display:none"></span>
+      <button class="dark-toggle" onclick="toggleDark()" id="darkBtn" title="Toggle dark mode">🌙</button>
       <button class="notif-btn" onclick="toggleNotif()" id="notifBtn" title="Notifications">
         🔔
         <span class="notif-badge" id="notifBadge">0</span>
@@ -511,6 +573,16 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
           <div class="field"><label>Title *</label><input type="text" id="fTitle" placeholder="Short summary of the issue" /></div>
           <div class="field"><label>Description *</label><textarea id="fDesc" placeholder="Describe the issue in detail…" rows="4"></textarea></div>
           <div class="field"><label>Location (optional)</label><input type="text" id="fLoc" placeholder="e.g. Hostel 3, Room 204" /></div>
+          <div class="field">
+            <label>Photos (optional, max 3)</label>
+            <div class="photo-upload-area" onclick="document.getElementById('photoInput').click()">
+              <div style="font-size:1.5rem">📷</div>
+              <div style="font-size:13px;color:var(--muted);margin-top:4px">Click to add photos</div>
+            </div>
+            <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="previewPhotos(this)" />
+            <div class="photo-preview" id="photoPreview"></div>
+            <div class="upload-progress" id="uploadProgress"></div>
+          </div>
           <button class="btn-main" style="max-width:200px" onclick="submitComplaint()">Submit Complaint</button>
         </div>
       </section>
@@ -554,7 +626,7 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendEmailVerification, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp, doc, setDoc, updateDoc, deleteDoc from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCCcfRiLwB5w2qPBia54rTRU3Uv9I4p_1Q",
@@ -568,6 +640,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 let currentUser = null;
 let allComplaints = [];
@@ -683,12 +756,18 @@ window.submitComplaint = async () => {
   const loc   = document.getElementById("fLoc").value.trim();
   if (!cat || !title || !desc) { alert("Please fill all required fields."); return; }
   try {
-    await addDoc(collection(db, "complaints"), {
+    const docRef = await addDoc(collection(db, "complaints"), {
       category: cat, priority: pri, title, description: desc, location: loc,
       status: "Pending", userId: currentUser.uid,
       userEmail: currentUser.email, userName: currentUser.displayName || currentUser.email,
       createdAt: serverTimestamp()
     });
+    // Upload photos if any
+    const photoUrls = await uploadPhotos(docRef.id);
+    if (photoUrls.length > 0) {
+      await updateDoc(docRef, { photos: photoUrls });
+    }
+
     document.getElementById("fCat").value = "";
     document.getElementById("fTitle").value = "";
     document.getElementById("fDesc").value = "";
@@ -830,7 +909,10 @@ window.sendReply = async (complaintId) => {
       repliedBy: currentUser.email
     });
     const c = allComplaints.find(x => x.id === complaintId);
-    if (c) { c.adminReply = replyText; c.repliedBy = currentUser.email; }
+    if (c) {
+      c.adminReply = replyText; c.repliedBy = currentUser.email;
+
+    }
     input.value = "";
     renderAdmin();
   } catch(e) { alert("Error sending reply: " + e.message); }
@@ -905,6 +987,7 @@ function cardHTMLWithVote(c) {
         </div>
       </div>
       <div class="c-desc">${escHtml(c.description)}</div>
+      ${c.photos && c.photos.length ? `<div class="complaint-photos">${c.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')" />`).join("")}</div>` : ""}
       ${c.adminReply ? `<div class="admin-reply"><div class="admin-reply-label">🛡 Admin Reply</div><div class="admin-reply-text">${escHtml(c.adminReply)}</div></div>` : ""}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
         <div class="c-by">👤 ${escHtml(c.userName||c.userEmail)}</div>
@@ -1051,6 +1134,75 @@ setInterval(async () => {
   await loadAllComplaints();
   checkNewReplies();
 }, 30000);
+
+
+// ══════════════════════════════════════════════
+// DARK MODE
+// ══════════════════════════════════════════════
+const savedTheme = localStorage.getItem("iitp_theme") || "light";
+if (savedTheme === "dark") document.documentElement.setAttribute("data-theme","dark");
+
+window.toggleDark = () => {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
+  localStorage.setItem("iitp_theme", isDark ? "light" : "dark");
+  const btn = document.getElementById("darkBtn");
+  if (btn) btn.textContent = isDark ? "🌙" : "☀️";
+};
+// Set correct icon on load
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("darkBtn");
+  if (btn) btn.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+});
+
+// ══════════════════════════════════════════════
+// PHOTO UPLOAD
+// ══════════════════════════════════════════════
+let selectedFiles = [];
+
+window.previewPhotos = (input) => {
+  const files = Array.from(input.files).slice(0,3);
+  selectedFiles = files;
+  const preview = document.getElementById("photoPreview");
+  preview.innerHTML = "";
+  files.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    preview.innerHTML += `<div class="del-photo" onclick="removePhoto(${i})"><img src="${url}" /></div>`;
+  });
+};
+
+window.removePhoto = (idx) => {
+  selectedFiles.splice(idx, 1);
+  const input = document.getElementById("photoInput");
+  input.value = "";
+  const preview = document.getElementById("photoPreview");
+  preview.innerHTML = "";
+  selectedFiles.forEach((f, i) => {
+    const url = URL.createObjectURL(f);
+    preview.innerHTML += `<div class="del-photo" onclick="removePhoto(${i})"><img src="${url}" /></div>`;
+  });
+};
+
+async function uploadPhotos(complaintId) {
+  if (!selectedFiles.length) return [];
+  const progress = document.getElementById("uploadProgress");
+  const urls = [];
+  for (let i = 0; i < selectedFiles.length; i++) {
+    if (progress) progress.textContent = `Uploading photo ${i+1} of ${selectedFiles.length}…`;
+    const file = selectedFiles[i];
+    const fileRef = storageRef(storage, `complaints/${complaintId}/${Date.now()}_${file.name}`);
+    await uploadBytes(fileRef, file);
+    const url = await getDownloadURL(fileRef);
+    urls.push(url);
+  }
+  if (progress) progress.textContent = "";
+  selectedFiles = [];
+  document.getElementById("photoPreview").innerHTML = "";
+  return urls;
+}
+
+
+
 </script>
 </body>
 </html>
