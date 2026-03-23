@@ -672,7 +672,7 @@ window.registerUser = async () => {
     }
     await signOut(auth);
     err.style.color = "#166534";
-    err.textContent = "✓ Account created! Verification email sent to your IITP inbox. Verify then login.";
+    err.textContent = "✓ Account created! Verification email sent to your IITP inbox/junk. One time click on link then login.";
     document.getElementById("regName").value = "";
     document.getElementById("regRoll").value = "";
     document.getElementById("regEmail").value = "";
