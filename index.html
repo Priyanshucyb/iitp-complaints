@@ -412,20 +412,7 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
 }
 .dark-toggle:hover { background:rgba(255,255,255,0.22); }
 
-/* ── PHOTO UPLOAD ── */
-.photo-upload-area {
-  border:2px dashed var(--border2);border-radius:10px;
-  padding:1.2rem;text-align:center;cursor:pointer;
-  transition:all 0.2s;background:var(--bg);margin-top:4px;
-}
-.photo-upload-area:hover { border-color:var(--navy2);background:#f0f4ff; }
-.photo-preview { display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
-.photo-preview img { width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--border2); }
-.photo-preview .del-photo { position:relative; }
-.photo-preview .del-photo::after { content:'×';position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;border-radius:50%;width:16px;height:16px;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:16px; }
-.complaint-photos { display:flex;gap:8px;flex-wrap:wrap;margin-top:8px; }
-.complaint-photos img { width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border2);cursor:pointer; }
-.upload-progress { font-size:12px;color:var(--navy2);margin-top:6px;font-weight:600; }
+
 
   </style>
 </head>
@@ -573,16 +560,6 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
           <div class="field"><label>Title *</label><input type="text" id="fTitle" placeholder="Short summary of the issue" /></div>
           <div class="field"><label>Description *</label><textarea id="fDesc" placeholder="Describe the issue in detail…" rows="4"></textarea></div>
           <div class="field"><label>Location (optional)</label><input type="text" id="fLoc" placeholder="e.g. Hostel 3, Room 204" /></div>
-          <div class="field">
-            <label>Photos (optional, max 3)</label>
-            <div class="photo-upload-area" onclick="document.getElementById('photoInput').click()">
-              <div style="font-size:1.5rem">📷</div>
-              <div style="font-size:13px;color:var(--muted);margin-top:4px">Click to add photos</div>
-            </div>
-            <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="previewPhotos(this)" />
-            <div class="photo-preview" id="photoPreview"></div>
-            <div class="upload-progress" id="uploadProgress"></div>
-          </div>
           <button class="btn-main" style="max-width:200px" onclick="submitComplaint()">Submit Complaint</button>
         </div>
       </section>
@@ -640,7 +617,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 let currentUser = null;
 let allComplaints = [];
@@ -756,17 +732,13 @@ window.submitComplaint = async () => {
   const loc   = document.getElementById("fLoc").value.trim();
   if (!cat || !title || !desc) { alert("Please fill all required fields."); return; }
   try {
-    const docRef = await addDoc(collection(db, "complaints"), {
+    await addDoc(collection(db, "complaints"), {
       category: cat, priority: pri, title, description: desc, location: loc,
       status: "Pending", userId: currentUser.uid,
       userEmail: currentUser.email, userName: currentUser.displayName || currentUser.email,
       createdAt: serverTimestamp()
     });
-    // Upload photos if any
-    const photoUrls = await uploadPhotos(docRef.id);
-    if (photoUrls.length > 0) {
-      await updateDoc(docRef, { photos: photoUrls });
-    }
+
 
     document.getElementById("fCat").value = "";
     document.getElementById("fTitle").value = "";
@@ -987,7 +959,6 @@ function cardHTMLWithVote(c) {
         </div>
       </div>
       <div class="c-desc">${escHtml(c.description)}</div>
-      ${c.photos && c.photos.length ? `<div class="complaint-photos">${c.photos.map(p=>`<img src="${p}" onclick="window.open('${p}')" />`).join("")}</div>` : ""}
       ${c.adminReply ? `<div class="admin-reply"><div class="admin-reply-label">🛡 Admin Reply</div><div class="admin-reply-text">${escHtml(c.adminReply)}</div></div>` : ""}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
         <div class="c-by">👤 ${escHtml(c.userName||c.userEmail)}</div>
@@ -1155,51 +1126,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btn) btn.textContent = savedTheme === "dark" ? "☀️" : "🌙";
 });
 
-// ══════════════════════════════════════════════
-// PHOTO UPLOAD
-// ══════════════════════════════════════════════
-let selectedFiles = [];
 
-window.previewPhotos = (input) => {
-  const files = Array.from(input.files).slice(0,3);
-  selectedFiles = files;
-  const preview = document.getElementById("photoPreview");
-  preview.innerHTML = "";
-  files.forEach((f, i) => {
-    const url = URL.createObjectURL(f);
-    preview.innerHTML += `<div class="del-photo" onclick="removePhoto(${i})"><img src="${url}" /></div>`;
-  });
-};
-
-window.removePhoto = (idx) => {
-  selectedFiles.splice(idx, 1);
-  const input = document.getElementById("photoInput");
-  input.value = "";
-  const preview = document.getElementById("photoPreview");
-  preview.innerHTML = "";
-  selectedFiles.forEach((f, i) => {
-    const url = URL.createObjectURL(f);
-    preview.innerHTML += `<div class="del-photo" onclick="removePhoto(${i})"><img src="${url}" /></div>`;
-  });
-};
-
-async function uploadPhotos(complaintId) {
-  if (!selectedFiles.length) return [];
-  const progress = document.getElementById("uploadProgress");
-  const urls = [];
-  for (let i = 0; i < selectedFiles.length; i++) {
-    if (progress) progress.textContent = `Uploading photo ${i+1} of ${selectedFiles.length}…`;
-    const file = selectedFiles[i];
-    const fileRef = storageRef(storage, `complaints/${complaintId}/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    const url = await getDownloadURL(fileRef);
-    urls.push(url);
-  }
-  if (progress) progress.textContent = "";
-  selectedFiles = [];
-  document.getElementById("photoPreview").innerHTML = "";
-  return urls;
-}
 
 
 
