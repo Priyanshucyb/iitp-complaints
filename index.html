@@ -748,6 +748,7 @@ window.submitComplaint = async () => {
     const toast = document.getElementById("submitToast");
     toast.style.display = "block";
     setTimeout(() => toast.style.display = "none", 3500);
+    addNotification("Complaint submitted!", "Your complaint is pending review.");
     await loadAllComplaints();
     renderDashboard();
   } catch (e) { alert("Failed to submit. " + e.message); }
@@ -1076,27 +1077,7 @@ function checkNewReplies() {
   });
 }
 
-// ── NOTIFY admin on new complaint ─────────────────
-const _origSubmit = window.submitComplaint;
-window.submitComplaint = async function() {
-  await _origSubmit();
-  addNotification("Complaint submitted!", "Your complaint is pending review.");
-};
 
-// ── NOTIFY admin on reply sent ────────────────────
-const _origReply = window.sendReply;
-window.sendReply = async function(id) {
-  await _origReply(id);
-  addNotification("Reply sent!", "Student will be notified.");
-  try { localStorage.removeItem("replied_" + id); } catch(e) {}
-};
-
-// ── NOTIFY admin on status change ─────────────────
-const _origStatus = window.changeStatus;
-window.changeStatus = async function(id, status) {
-  await _origStatus(id, status);
-  addNotification(`Status changed to "${status}"`, "Complaint updated successfully.");
-};
 
 // ── INIT ──────────────────────────────────────────
 setTimeout(() => { updateNotifBadge(); checkNewReplies(); }, 1500);
