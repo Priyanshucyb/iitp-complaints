@@ -1,0 +1,24 @@
+{
+  "name": "IITP Campus Complaints",
+  "short_name": "IITP Complaints",
+  "description": "IIT Patna Campus Complaint Portal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a1f5c",
+  "theme_color": "#0a1f5c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "iitp-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "iitp-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
