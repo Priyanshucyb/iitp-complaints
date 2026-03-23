@@ -55,11 +55,11 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
 @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 .login-header{
   background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);
-  padding:2rem 2rem 1.5rem;
-  display:flex;align-items:center;gap:14px;
+  padding:1.8rem 2rem 1.4rem;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;
 }
-.login-logo-wrap{background:white;border-radius:12px;padding:6px 10px;display:flex;align-items:center;justify-content:center;}
-.login-logo-wrap img{height:44px;width:auto;object-fit:contain;}
+.login-logo-wrap{background:white;border-radius:12px;padding:8px 14px;display:flex;align-items:center;justify-content:center;}
+.login-logo-wrap img{height:56px;width:auto;object-fit:contain;}
 .login-title{color:white;}
 .login-title h1{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;line-height:1.1;}
 .login-title p{font-size:12px;color:rgba(255,255,255,0.65);margin-top:3px;}
@@ -134,6 +134,7 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
   padding:1.2rem 0.8rem;
   display:flex;flex-direction:column;gap:3px;flex-shrink:0;
   box-shadow:2px 0 8px rgba(10,31,92,0.04);
+  overflow-y:auto;
 }
 .sidebar-section{font-size:10px;font-weight:700;color:var(--muted2);letter-spacing:0.08em;text-transform:uppercase;padding:6px 12px 4px;margin-top:8px;}
 .nav-item{
@@ -361,6 +362,9 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
   .content{padding:1rem;}
   .nav-user-pill{display:none;}
   .notif-panel{right:8px;left:8px;width:auto;}
+  .nav-brand-text{display:none;}
+  .nav-right{gap:6px;}
+  .notif-btn{width:32px;height:32px;font-size:14px;}
 }
   </style>
 </head>
@@ -421,12 +425,10 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
       <span class="nav-brand-text">IITP <em>Complaints</em></span>
     </div>
     <div class="nav-right">
-      <span class="nav-user-pill" id="navUser"></span>
       <button class="notif-btn" onclick="toggleNotif()" id="notifBtn" title="Notifications">
         🔔
         <span class="notif-badge" id="notifBadge">0</span>
       </button>
-      <button class="btn-logout" onclick="logoutUser()">Logout</button>
     </div>
   </nav>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
@@ -461,6 +463,14 @@ html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(
         <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"/></svg>
         Admin Panel
       </button>
+      <div style="flex:1"></div>
+      <div style="border-top:1px solid var(--border);padding:12px 8px 4px;">
+        <div style="font-size:11px;color:var(--muted2);padding:0 12px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="sidebarUser"></div>
+        <button class="nav-item" onclick="logoutUser()" style="color:#dc2626;width:100%">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"/></svg>
+          Logout
+        </button>
+      </div>
     </aside>
 
     <main class="content">
@@ -568,6 +578,7 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById("loginPage").style.display = "none";
     document.getElementById("appPage").style.display = "block";
     document.getElementById("navUser").textContent = user.email;
+    const su = document.getElementById("sidebarUser"); if(su) su.textContent = user.email;
     if (ADMIN_EMAILS.includes(user.email)) {
       document.getElementById("adminNavItem").style.display = "flex";
     }
